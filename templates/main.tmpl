@@ -4,6 +4,12 @@ var<int> += var<int>
 var<int> += int
 var<int> -= var<int>
 var<int> -= int
+avar<int> += avar<int>
+avar<int> += var<int>
+avar<int> += int
+avar<int> -= avar<int>
+avar<int> -= var<int>
+avar<int> -= int
 if var<int> < var<int>
 if var<int> < int
 if var<int> > var<int>
@@ -18,5 +24,7 @@ def nfunc()
 def nfunc(pvar<int>)
 def nfunc(pvar<int>,pvar<int>)
 func()
-func(avar<int>)
-func(avar<int>,avar<int>)
+func(var<int>)
+func(var<int>,var<int>)
+return
+return var<int>

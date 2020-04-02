@@ -1,6 +1,9 @@
 nvar<int> = int
 var<int> = int
 {{var<int>}} {{+=|-=}} {{var<int>|int}}
+{{avar<int>}} {{+=|-=}} {{avar<int>|var<int>|int}}
 if var<int> {{<|>|<=|>=|==}} {{var<int>|int}}
 def nfunc({{|pvar<int>|pvar<int>,pvar<int>}})
-func({{|avar<int>|avar<int>,avar<int>}})
+func({{|var<int>|var<int>,var<int>}})
+return
+return {{var<int>}}
