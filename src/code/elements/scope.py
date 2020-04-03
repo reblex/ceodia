@@ -1,6 +1,7 @@
 class Scope():
     def __init__(self):
         self.in_function = None # Are we currently inside of a function body? What function object?
+        self.nr_instructions_in_func = 0 # How many lines have been written in the current function?
         self.indent = 0
         self.vars = {
             "int": {

@@ -16,4 +16,4 @@ cw.load_instructions("templates/main.tmpl")
 
 cw.write()
 for instruction in cw.written_instructions:
-	print(str(instruction))
+	print(instruction.indent, str(instruction))

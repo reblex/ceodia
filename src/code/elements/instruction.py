@@ -11,8 +11,9 @@ class Instruction():
         self.template = template.split(" ")  # List of elemnts in the instruction.
         self.indent = None                   # Indentation of the line (amount of tabs)
         self.dynamic_element_indexes = []    # Indexes of the template's dynamic elements.
-        self.elements = []                   # Uncompiled elements. Mix of static strings & element objects.
+        self.elements = self.template.copy() # Uncompiled elements. Mix of static strings & element objects.
         self.pre_compiled_elements = []      # All elements after pre-compilation.
+
 
     def is_statement(self):
         """Is this instruction a statement? i.e. does it increase indentation?"""
@@ -80,7 +81,9 @@ class Instruction():
         if len(args) != len(self.dynamic_element_indexes):
             raise Exception("Incorrect number of dynamic elements when completing instruction.")
 
-        self.elements = self.template
+        # Make note if a function has called return.
+        if self.elements[0] == "return":
+            scope.in_function.has_returned = True
 
         # Replace dynamic elements with elements given by code_writer.
         for i, index in enumerate(self.dynamic_element_indexes):
@@ -98,13 +101,17 @@ class Instruction():
                 if scope.in_function != None:
                     if scope.in_function.indent == scope.indent:
                         scope.in_function = None
+                        scope.nr_instructions_in_func = 0
+                else:
+                    scope.nr_instructions_in_func += 1
 
                 self.pre_compiled_elements.append("nlb")
 
             # The instruction is defining a new function.
             # Create a new function object and argument variables if present.
             elif element.startswith("nfunc"):
-                param_types = re.findall(r"<(.*?)>", element)
+                return_type = re.findall(r"nfunc<(.*?)>", element)[0]
+                param_types = re.findall(r"pvar<(.*?)>", element)
 
                 # Create the argument variables representing the parameters, if present.
                 param_arg_vars = []
@@ -121,7 +128,7 @@ class Instruction():
                 func_num = scope.funcs['num_created']
                 scope.funcs['num_created'] += 1
                 
-                func = Function(scope.indent, param_types, param_arg_vars, func_num)
+                func = Function(scope.indent, param_types, param_arg_vars, func_num, return_type)
                 scope.funcs['available'].append(func)
 
                 # Entering function body, mark what function it is so we know

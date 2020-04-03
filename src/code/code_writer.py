@@ -34,10 +34,8 @@ class CodeWriter():
         """
         Write instructions untill the program is deemed finished.
         """
-        
-        # TODO: More intelligence behind the decision to end.
-        # Currently 10% chance to end when endable.
-        while not self.is_endable() or not random.randint(0, 100) < 10:
+
+        while True:
 
             # Find all currently writable instructions
             writable_instructions = self.find_writable_instructions()        
@@ -49,6 +47,10 @@ class CodeWriter():
             # Select one
             selected_instruction = self.select_instruction(writable_instructions)
             
+            # If the writer determines code to be finished.
+            if selected_instruction == None:
+                break
+
             # Set the indentation of the line
             selected_instruction.indent = self.scope.indent
 
@@ -58,6 +60,9 @@ class CodeWriter():
 
             # Finally add the completed instruction as a line of code.
             self.written_instructions.append(completed_instruction)
+
+            # DEBUG
+            # print("Instruction Count:", len(self.written_instructions), "Num Funcs", self.scope.funcs['num_created'], "Current Indent:", self.scope.indent)
 
 
     def find_writable_instructions(self):
@@ -75,16 +80,41 @@ class CodeWriter():
         # Continue to next instruction if any requirement is missing.
         for instruction in self.available_instructions:
 
+            # Check -1:
+            # If the function has return in the first indentation level of the body, you have to call nlb.
+            # Otherwise the code will be unreachable.
+            # And...
+            # Do not return in void-function
+            # AND...
+            # Do not return on any other indent rather than the most inner body indent. 
+            if self.scope.in_function != None:    
+                if self.scope.indent == self.scope.in_function.indent + 1:
+                    if self.written_instructions[-1].template[0] == "return" and instruction.template[0] != "nlb":
+                        continue
+
+                if instruction.template[0] == "return":
+                    if self.scope.in_function.return_type == "void":
+                        continue
+
+                    if self.scope.indent != self.scope.in_function.indent + 1:
+                        continue
+
             # Check 0:
             # Is the instruction trying to reduce indent below 0?
             # Or is the instruction trying to reduce indent JUST AFTER statement declaration?
+            # OR... Is the instruction trying to exit non-void function before return?
             if instruction.template[0] == "nlb":
                 if self.scope.indent == 0:
                     continue
                 
-                elif len(self.written_instructions) > 0:
+                if len(self.written_instructions) > 0:
                     if self.written_instructions[-1].is_statement():
                         continue
+
+                if self.scope.in_function != None:
+                    if self.scope.indent == self.scope.in_function.indent + 1:
+                        if not self.scope.in_function.has_returned:
+                            continue
 
             # Check 1:
             # Would the instruction increase current indent past MAX_INDENT?
@@ -117,8 +147,8 @@ class CodeWriter():
                 continue
 
 
-            # All checks have been passed. Instruction is currentyl writable.
-            writable_instructions.append(instruction)
+            # All checks have been passed. Instruction is currently writable.
+            writable_instructions.append(instruction.clone())
 
         return writable_instructions
 
@@ -127,11 +157,82 @@ class CodeWriter():
         """
         Select one of the writable instructions.
         """
-        # TODO: Actually use some intelligence here. (weighted list of writable instructions?)
-        instruction = np.random.choice(writable_instructions)
+
+        # If there are no more instruction left to write, return None to
+        # finish the code. This happens if a function has return and the
+        # indent has been reduced to 0 when only writing a single function.
+        if len(writable_instructions) == 0:
+            return None
+
+        # If there is just one avaialble instruction just return it.
+        # This can happen when the only thing left avaialable is "nlb".
+        if len(writable_instructions) == 1:
+            return writable_instructions[0]
+
+        # Determine relevance of each instruction.
+        # Relevance is scored from 1-100, with a baseline of 50.
+        # 
+        # OBS: Relevance is currently not capped at 100!      
+        #
+        # OBS: relevance != percentual chance to get picked.
+        # Score will be converted into probabilities based on each
+        # instructions individual score, so a higher score means
+        # a larger chance to get selected, but never 0% or 100%.
+        instruction_relevance = [50 for _ in writable_instructions]
         
-        # Returned cloned as we don't want to edit the original instruction object.
-        return instruction.clone()
+        # If the code is currently endable, add the end instruction (None).
+        if self.is_endable():
+            instruction_relevance.append(50)
+            writable_instructions.append(None)
+
+        for i, instruction in enumerate(writable_instructions):
+            relevance = 50
+            
+            if instruction == None:
+                # TODO: there should probably be a lot more going into this decision.
+                relevance = 100
+                relevance += len(self.written_instructions) * 5
+
+            elif instruction.template[0] == "nlb":
+                # The higher the value of current indentation, the larger the
+                # chance to reduce indentation.
+                relevance += 10 * self.scope.indent
+                relevance += len(self.written_instructions) * 5
+
+            elif instruction.is_statement():
+                # Reduce chance to increase indentation the higher the current indentation,
+                # when at or above indent 2.
+                if self.scope.indent > 1:
+                    relevance -= 15 * self.scope.indent
+                    relevance -= len(self.written_instructions) * 5
+
+            elif instruction.template[0] == "return":
+                # The more lines in a function, the more likely to return.
+                # The option to return is only available when on the first level
+                # of indentation of the function, but all lines in the function count.
+                relevance += 5 * self.scope.nr_instructions_in_func    
+
+
+            # Keep relevance within 1-100.
+            # instruction_relevance[i] = max(1, min(100, relevance))
+            instruction_relevance[i] = max(1, relevance)
+
+
+        # Calculate normalizer, using: (1 / (sum of relevance)).
+        normalizer = 1 / float(sum(instruction_relevance))
+
+        # Multiply each value by the normalizer to determine probabilities.
+        probabilities = [relevance * normalizer for relevance in instruction_relevance]
+
+        # Select species based on probability
+        selected_instruction = np.random.choice(writable_instructions, 1, p=probabilities)[0]
+        
+        # Return a clone, as we don't want to edit the original instruction object.
+        if selected_instruction != None:
+            selected_instruction = selected_instruction
+
+        
+        return selected_instruction
 
 
     # TODO: Rename to "pre_compile" for clarity?
@@ -139,7 +240,7 @@ class CodeWriter():
         """
         Fill out all dynamic elements and lock in the instruction to complete it.
         Then update the current scope with variable/scope changes.
-        """
+        """ 
         dynamic_element_tokens = instruction.get_dynamic_element_tokens()
         element_objects = []
 
@@ -153,7 +254,7 @@ class CodeWriter():
             elements = self.get_dynamic_elements_of_type(token)
 
             # Select one.
-            # TODO: Use some intelligence (weighted list of elements?)
+            # TODO: Use some intelligence (weighted list of elements?) Similar to select_instruction()
             selected_element = np.random.choice(elements)
             element_objects.append(selected_element)
 
@@ -163,6 +264,7 @@ class CodeWriter():
         # print(">", instruction.pre_compiled_elements)
 
         return instruction
+
 
     def is_endable(self):
         """
@@ -176,9 +278,12 @@ class CodeWriter():
         elif self.written_instructions[-1].is_statement():
             endable = False
 
+        elif self.scope.in_function != None:
+            if not self.scope.in_function.has_returned:
+                endable = False
+
         return endable
         
-
 
     def requirement_is_present(self, requirement):
         """
@@ -203,11 +308,16 @@ class CodeWriter():
                 is_present = True
 
         elif requirement.startswith("func"):
-            arg_types = re.findall(r"<(.*?)>", requirement)
+            return_type = re.findall(r"func<(.*?)>", requirement)[0]
+            arg_types = re.findall(r"var<(.*?)>", requirement)
 
             for func in self.scope.funcs['available']:
                 if not len(arg_types) == len(func.param_types):
                     break
+
+                # Correct return type (void/int/bool etc.)
+                if func.return_type != return_type:
+                    continue
 
                 # Make sure that all function parameters are matching.
                 matching_args = True
@@ -255,9 +365,14 @@ class CodeWriter():
             elements = self.scope.avars[type]['available']
 
         elif token.startswith("func"):
-            arg_types = re.findall(r"<(.*?)>", token)
+            return_type = re.findall(r"func<(.*?)>", token)[0]
+            arg_types = re.findall(r"var<(.*?)>", token)
 
             for func in self.scope.funcs['available']:
+                # Check for correct return type (void/int/bool etc.)
+                if func.return_type != return_type:
+                    continue
+
                 if len(arg_types) == len(func.param_types):
                     matching_args = True
                     for i in range(len(arg_types)):

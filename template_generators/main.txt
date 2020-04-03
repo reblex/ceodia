@@ -1,9 +1,22 @@
+### Generic Variable Declaration ###
 nvar<int> = int
+
+### Basic Math & Assignment ###
 var<int> = int
 {{var<int>}} {{+=|-=}} {{var<int>|int}}
 {{avar<int>}} {{+=|-=}} {{avar<int>|var<int>|int}}
+
+#### Statements ###
 if var<int> {{<|>|<=|>=|==}} {{var<int>|int}}
-def nfunc({{|pvar<int>|pvar<int>,pvar<int>}})
-func({{|var<int>|var<int>,var<int>}})
-return
+
+#### Function Def ###
+def nfunc<void>({{|pvar<int>|pvar<int>,pvar<int>}})
+def nfunc<int>({{|pvar<int>|pvar<int>,pvar<int>}})
+
+### Returns ###
 return {{var<int>}}
+
+### Function Call ###
+func<void>({{|var<int>|var<int>,var<int>}})
+var<int> = func<int>({{|var<int>|var<int>,var<int>}})
+avar<int> = func<int>({{|var<int>|var<int>,var<int>}})
