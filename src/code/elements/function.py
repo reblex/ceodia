@@ -35,6 +35,6 @@ class Function():
                 
                 arg_str += "var<" + str(param.type) + ">" + str(param.number)
             
-            param_str = "func" + self.return_type + ">" + str(self.number) + "(" + arg_str + ")"   
+            param_str = "func<" + self.return_type + ">" + str(self.number) + "(" + arg_str + ")"   
 
         return param_str

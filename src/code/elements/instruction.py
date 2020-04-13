@@ -70,7 +70,7 @@ class Instruction():
         return dynamic_elements
 
 
-    def finalize(self, args, scope):
+    def precompile(self, args, scope):
         """
         Fill out all dynamic elements of the instruction to complete it. Then update the scope.
         The dynamic elements are represented as a list(args) in order.

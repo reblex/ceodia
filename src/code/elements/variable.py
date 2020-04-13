@@ -6,6 +6,7 @@ class Variable():
         self.number = number
         self.idx_of = None
         self.is_argument = is_argument
+        self.has_been_defined = False
         
     def __str__(self):
         """
@@ -15,7 +16,11 @@ class Variable():
         if self.is_argument:
             token += "avar"
         else:
-            token += "var"
+            if not self.has_been_defined:
+                token += "nvar"
+                self.has_been_defined = True
+            else:
+                token += "var"
 
         token += "<" + str(self.type) + ">" + str(self.number)
 

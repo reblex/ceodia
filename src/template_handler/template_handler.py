@@ -1,3 +1,5 @@
+from src.code.elements.instruction import Instruction
+
 import itertools
 import re
 
@@ -22,13 +24,29 @@ class TemplateHandler():
 		for generator in self.template_generators:
 			self.templates.extend(self.expand(generator))
 
-
 	def save_templates(self, path):
 		"""Save loaded/generated templates to file"""
 		with open(path, "w+") as file:
 			for template in self.templates:
 				template_str = ' '.join(template) + "\n"
 				file.write(template_str)
+
+	def create_instructions(self, path):
+		"""
+		Load instructions from .tmpl-file and generate instruction objects.
+		"""
+		instructions = []
+
+		# Add the "New Line Break" manually, which reduces indent when selected.
+		instruction = Instruction("nlb")
+		instructions.append(instruction)
+
+		with open(path, "r") as file:
+			for line in file.readlines():
+				instruction = Instruction(line.strip("\n"))
+				instructions.append(instruction)
+
+		return instructions
 
 
 	def load_existing_templates(self, path):

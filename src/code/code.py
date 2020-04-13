@@ -7,28 +7,12 @@ import re
 
 MAX_INDENDT = 5
 
-class CodeWriter():
+class Code():
 
-    def __init__(self):
-        self.scope = Scope()             # Currently scoped dynamic elements & other scope related stuff
-        self.available_instructions = [] # All loaded instruction objects
-        self.written_instructions = []   # Completed lines of code, represented as Instruction objects
-
-
-    def load_instructions(self, path):
-        """
-        Load instructions from .tmpl-file and generate instruction objects.
-        """
-        
-        # Add the "New Line Break" manually, which reduces indent when selected.
-        instruction = Instruction("nlb")
-        self.available_instructions.append(instruction)
-
-        with open(path, "r") as file:
-            for line in file.readlines():
-                instruction = Instruction(line.strip("\n"))
-                self.available_instructions.append(instruction)
-
+    def __init__(self, available_instructions):
+        self.scope = Scope()                                 # Currently scoped dynamic elements & other scope related stuff
+        self.available_instructions = available_instructions # All loaded instruction objects
+        self.written_instructions = []                       # Completed lines of code, represented as Instruction objects
 
     def write(self):
         """
@@ -56,13 +40,21 @@ class CodeWriter():
 
             # Fill out dynamic elements and lock in the instruction to complete it.
             # Then update the current scope with variable/scope changes.
-            completed_instruction = self.finalize_instruction(selected_instruction)
+            completed_instruction = self.precompile_instruction(selected_instruction)
 
             # Finally add the completed instruction as a line of code.
             self.written_instructions.append(completed_instruction)
 
             # DEBUG
             # print("Instruction Count:", len(self.written_instructions), "Num Funcs", self.scope.funcs['num_created'], "Current Indent:", self.scope.indent)
+
+
+    def finalize(self):
+        """
+        When the code is complete, remove unnecessary stuff.
+        """
+        self.available_instructions = None
+        self.scope = None
 
 
     def find_writable_instructions(self):
@@ -236,7 +228,7 @@ class CodeWriter():
 
 
     # TODO: Rename to "pre_compile" for clarity?
-    def finalize_instruction(self, instruction):
+    def precompile_instruction(self, instruction):
         """
         Fill out all dynamic elements and lock in the instruction to complete it.
         Then update the current scope with variable/scope changes.
@@ -258,7 +250,7 @@ class CodeWriter():
             selected_element = np.random.choice(elements)
             element_objects.append(selected_element)
 
-        self.scope = instruction.finalize(element_objects, self.scope)
+        self.scope = instruction.precompile(element_objects, self.scope)
 
         # DEBUG
         # print(">", instruction.pre_compiled_elements)
