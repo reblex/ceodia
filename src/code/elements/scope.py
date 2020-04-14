@@ -1,3 +1,5 @@
+import copy
+
 class Scope():
     def __init__(self):
         self.in_function = None # Are we currently inside of a function body? What function object?
@@ -59,3 +61,16 @@ class Scope():
                 funcs_still_in_scope.append(func)
 
         self.funcs['available'] = funcs_still_in_scope
+
+
+    def clone(self):
+        """
+        Return a new Sope object with identical member values as self.
+        """
+        clone = Scope()
+        clone.in_function = self.in_function
+        clone.nr_instructions_in_func = self.nr_instructions_in_func
+        clone.indent = self.indent
+        clone.vars = copy.deepcopy(self.vars)
+        clone.avars = copy.deepcopy(self.avars)
+        clone.funcs = copy.deepcopy(self.funcs)

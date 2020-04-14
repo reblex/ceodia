@@ -9,9 +9,9 @@ class Instruction():
 
     def __init__(self, template):
         self.template = template.split(" ")  # List of elemnts in the instruction.
+        self.elements = self.template.copy() # Uncompiled elements. Mix of static strings & element objects.
         self.indent = None                   # Indentation of the line (amount of tabs)
         self.dynamic_element_indexes = []    # Indexes of the template's dynamic elements.
-        self.elements = self.template.copy() # Uncompiled elements. Mix of static strings & element objects.
         self.pre_compiled_elements = []      # All elements after pre-compilation.
 
 
@@ -162,9 +162,14 @@ class Instruction():
 
     def clone(self):
         """
-        Returns a copy of self.
+        Return a new Instruction object with identical member values as self.
         """
-        return Instruction(" ".join(self.template))
+        clone = Instruction(" ".join(self.template))
+        clone.indent = self.indent
+        clone.dynamic_element_indexes = self.dynamic_element_indexes.copy()
+        clone.pre_compiled_elements = self.pre_compiled_elements.copy()
+
+        return clone
 
 
     def __str__(self):

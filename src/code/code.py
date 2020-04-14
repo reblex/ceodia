@@ -14,6 +14,7 @@ class Code():
         self.available_instructions = available_instructions # All loaded instruction objects
         self.written_instructions = []                       # Completed lines of code, represented as Instruction objects
 
+
     def write(self):
         """
         Write instructions untill the program is deemed finished.
@@ -35,18 +36,28 @@ class Code():
             if selected_instruction == None:
                 break
 
-            # Set the indentation of the line
-            selected_instruction.indent = self.scope.indent
-
-            # Fill out dynamic elements and lock in the instruction to complete it.
-            # Then update the current scope with variable/scope changes.
-            completed_instruction = self.precompile_instruction(selected_instruction)
-
-            # Finally add the completed instruction as a line of code.
-            self.written_instructions.append(completed_instruction)
+            # Complete the instruction and add it to written instructions
+            self.write_instruction(selected_instruction)
 
             # DEBUG
             # print("Instruction Count:", len(self.written_instructions), "Num Funcs", self.scope.funcs['num_created'], "Current Indent:", self.scope.indent)
+
+
+    def write_instruction(self, instruction):
+        """
+        Complete and pre-compile a selected instruction and
+        add it to the list of written instructions.
+        """
+        
+        # Set the indentation of the line
+        instruction.indent = self.scope.indent
+
+        # Fill out dynamic elements and lock in the instruction to complete it.
+        # Then update the current scope with variable/scope changes.
+        completed_instruction = self.precompile_instruction(instruction)
+
+        # Finally add the completed instruction as a line of code.
+        self.written_instructions.append(completed_instruction)
 
 
     def finalize(self):
@@ -384,3 +395,22 @@ class Code():
             raise Exception("bool static value handling not implemented")
 
         return elements
+
+
+    def clone(self):
+        """
+        Return a new Code object with identical member values as self.
+        OBS: Cannot be used after calling finalize().
+        """
+        if self.available_instructions == None:
+            raise Exception("Trying to clone finalized Code.")
+        
+        clone = Code(self.available_instructions)
+        
+        instruction_clones = []
+        for instruction in self.written_instructions:
+            instruction_clones.append(instruction.clone())
+
+        clone.written_instructions = instruction_clones
+
+        clone.scope = self.scope.clone()
