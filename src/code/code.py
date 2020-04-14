@@ -397,6 +397,29 @@ class Code():
         return elements
 
 
+    def save_to_file(self, path):
+        """
+        Write pre-compiled code to file.
+        """
+        with open(path, "w") as file:
+            for instruction in self.written_instructions:
+                file.write(str(instruction) + "\n")
+
+
+    def load_from_file(self, path):
+        """
+        Load pre-compiled code back into instruction objects.
+        """
+        lines = []
+        with open(path, "r") as file:
+            lines = file.read().splitlines()
+
+        for line in lines:
+            instruction = Instruction()
+            self.scope = instruction.load(line, self.scope)
+            self.written_instructions.append(instruction)
+
+
     def clone(self):
         """
         Return a new Code object with identical member values as self.

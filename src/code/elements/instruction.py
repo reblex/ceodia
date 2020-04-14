@@ -7,12 +7,16 @@ import re
 class Instruction():
     """Represents one line of Code"""
 
-    def __init__(self, template):
-        self.template = template.split(" ")  # List of elemnts in the instruction.
-        self.elements = self.template.copy() # Uncompiled elements. Mix of static strings & element objects.
+    def __init__(self, template=None):
+        self.template = []                   # List of elemnts in the instruction.
+        self.elements = []                   # Uncompiled elements. Mix of static strings & element objects.
         self.indent = None                   # Indentation of the line (amount of tabs)
         self.dynamic_element_indexes = []    # Indexes of the template's dynamic elements.
         self.pre_compiled_elements = []      # All elements after pre-compilation.
+
+        if template != None:
+            self.template = template.split(" ")
+            self.elements = self.template.copy()
 
 
     def is_statement(self):
@@ -92,72 +96,158 @@ class Instruction():
         # Create variable/func objects, update scope etc.
         # And finally, pre-compile elements into tokens.
         for element in self.elements:
-
-            # The instruction is just reducing indentation.
-            if element == "nlb":
-                scope.reduce_indentation()
-
-                # Exiting a function body
-                if scope.in_function != None:
-                    if scope.in_function.indent == scope.indent:
-                        scope.in_function = None
-                        scope.nr_instructions_in_func = 0
-                else:
-                    scope.nr_instructions_in_func += 1
-
-                self.pre_compiled_elements.append("nlb")
-
-            # The instruction is defining a new function.
-            # Create a new function object and argument variables if present.
-            elif element.startswith("nfunc"):
-                return_type = re.findall(r"nfunc<(.*?)>", element)[0]
-                param_types = re.findall(r"pvar<(.*?)>", element)
-
-                # Create the argument variables representing the parameters, if present.
-                param_arg_vars = []
-                for type in param_types:
-                    # TODO: Move handling of creation of avars/vars/funcs to Scope class?
-                    var_num = scope.avars[type]['num_created']
-                    scope.avars[type]['num_created'] += 1
-                    
-                    var = Variable(type, scope.indent + 1, var_num, True)
-                    param_arg_vars.append(var)
-                    scope.avars[type]['available'].append(var)
-
-                # Create the function object.
-                func_num = scope.funcs['num_created']
-                scope.funcs['num_created'] += 1
-                
-                func = Function(scope.indent, param_types, param_arg_vars, func_num, return_type)
-                scope.funcs['available'].append(func)
-
-                # Entering function body, mark what function it is so we know
-                # when we are exiting it.
-                scope.in_function = func
-
-                self.pre_compiled_elements.append(str(func))
-
-            # Creation of a "regular" variable.
-            elif element.startswith("nvar"):
-                type = re.findall(r"<(.*?)>", element)[0]
-                var_num = scope.vars[type]['num_created']
-                scope.vars[type]['num_created'] += 1
-                
-                var = Variable(type, scope.indent + 1, var_num)
-                scope.vars[type]['available'].append(var)
-
-                self.pre_compiled_elements.append(str(var))
-
-            # Static elements are just appended, as they are already pre-compiled.
-            else:
-                self.pre_compiled_elements.append(element)
-
+            scope = self.parse_element(element, scope)
 
         # LASTLY!! Increase indent if this instruction is a statement.
         if self.is_statement():
             scope.indent += 1
 
         return scope
+
+
+    def load(self, string, scope):
+        """
+        Load an instruction from an already pre-compiled instruction string
+        and update the scope. Similar to the precompile function.
+        """
+
+        self.indent = string.count("\t")
+        elements = string.replace("\t", "").replace("\n", "").split(" ")
+
+        self.template = self.recreate_tempalte(elements)
+
+        # Make note if a function has called return.
+        if elements[0] == "return":
+            scope.in_function.has_returned = True
+
+        # Create variable/func objects, update scope etc.
+        for element in elements:
+            scope = self.parse_element(element, scope)
+
+        # LASTLY!! Increase indent if this instruction is a statement.
+        if elements[0] in ["def", "for", "while", "if"]:
+            scope.indent += 1
+
+        return scope  
+
+
+    def parse_element(self, element, scope):
+        """
+        Create variable/func objects, update scope etc.
+        And finally, pre-compile elements into tokens.
+        """
+        
+        # The instruction is just reducing indentation.
+        if element == "nlb":
+            scope.reduce_indentation()
+
+            # Exiting a function body
+            if scope.in_function != None:
+                if scope.in_function.indent == scope.indent:
+                    scope.in_function = None
+                    scope.nr_instructions_in_func = 0
+            else:
+                scope.nr_instructions_in_func += 1
+
+            self.pre_compiled_elements.append("nlb")
+
+        # The instruction is defining a new function.
+        # Create a new function object and argument variables if present.
+        elif element.startswith("nfunc"):
+            return_type = re.findall(r"nfunc<(.*?)>", element)[0]
+            param_types = re.findall(r"pvar<(.*?)>", element)
+
+            # Create the argument variables representing the parameters, if present.
+            param_arg_vars = []
+            for type in param_types:
+                # TODO: Move handling of creation of avars/vars/funcs to Scope class?
+                var_num = scope.avars[type]['num_created']
+                scope.avars[type]['num_created'] += 1
+                
+                var = Variable(type, scope.indent + 1, var_num, True)
+                param_arg_vars.append(var)
+                scope.avars[type]['available'].append(var)
+
+            # Create the function object.
+            func_num = scope.funcs['num_created']
+            scope.funcs['num_created'] += 1
+            
+            func = Function(scope.indent, param_types, param_arg_vars, func_num, return_type)
+            scope.funcs['available'].append(func)
+
+            # Entering function body, mark what function it is so we know
+            # when we are exiting it.
+            scope.in_function = func
+
+            self.pre_compiled_elements.append(str(func))
+
+        # Creation of a "regular" variable.
+        elif element.startswith("nvar"):
+            type = re.findall(r"<(.*?)>", element)[0]
+            var_num = scope.vars[type]['num_created']
+            scope.vars[type]['num_created'] += 1
+            
+            var = Variable(type, scope.indent + 1, var_num)
+            scope.vars[type]['available'].append(var)
+
+            self.pre_compiled_elements.append(str(var))
+
+        # Static elements are just appended, as they are already pre-compiled.
+        else:
+            self.pre_compiled_elements.append(element)
+
+
+        return scope
+
+
+    def recreate_tempalte(self, elements):
+        """
+        Recreate an instruction template from a list of pre-compiled elements.
+        This is used to recreate the original template of a loaded instruction.
+        """
+        parsed_elements = []
+        for element in elements:
+            parsed_elements.append(self.recreate_template_element(element))
+        
+        return parsed_elements
+
+
+    def recreate_template_element(self, element):
+        """
+        Recreate an instruction element into the original template element.
+        """
+        if self.is_int(element):
+            return "int"
+
+        elif self.is_bool(element):
+            return "bool"
+        
+        else:
+            # Remove variable/function numberings if present
+            element = re.sub(r"(<.*?>)[\d]+?", r"\1", element)
+
+        return element
+
+
+    def is_int(self, string):
+        """
+        Check if a string represents an integer.
+        """
+        try:
+            int(string)
+            return True
+        except ValueError:
+            return False
+
+
+    def is_bool(self, string):
+        """
+        Check if a string represents a boolean.
+        """
+        if string in ["True", "False"]:
+            return True
+
+        return False
 
 
     def clone(self):
@@ -176,4 +266,9 @@ class Instruction():
         """
         Return a complete string of the pre-compiled instruction.
         """
-        return " ".join(self.pre_compiled_elements)
+        indents = ""
+        # Set the indentation
+        for _ in range(self.indent):
+            indents += "\t"
+
+        return indents + " ".join(self.pre_compiled_elements)
