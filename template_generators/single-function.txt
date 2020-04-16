@@ -1,0 +1,13 @@
+### Generic Variable Declaration ###
+nvar<int> = int
+
+### Basic Math & Assignment ###
+var<int> = int
+{{var<int>}} {{+=|-=}} {{var<int>|int}}
+{{avar<int>}} {{+=|-=}} {{avar<int>|var<int>|int}}
+
+#### Statements ###
+if var<int> {{<|>|<=|>=|==}} {{var<int>|int}}
+
+### Returns ###
+return {{var<int>}}

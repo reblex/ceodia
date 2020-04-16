@@ -13,9 +13,14 @@ class Compiler():
         Compile a pre-compiled Code Object to Python3 code. 
         Return a list of strings representing correctly indented Python3 code.
         """
-        compiled_lines = []
+        compiled_lines = ["#!/usr/bin/env python3"]
 
         for instruction in code.written_instructions:
+            
+            # Vertical spacing.
+            if instruction.is_statement() or instruction.template[0] == "return":
+                compiled_lines.append("")
+            
             compiled_elements = []
             compiled_line = ""
 
@@ -30,7 +35,24 @@ class Compiler():
 
             # Make the line a string
             compiled_line += " ".join(compiled_elements)
+            
+            if instruction.is_statement():
+                compiled_line += ":"
+            
             compiled_lines.append(compiled_line)
+
+        return compiled_lines
+
+
+    def compile_and_write(self, code, path):
+        """
+        Compile code and write to file. Returns compiled code as list of strings if desired.
+        """
+        compiled_lines = self.compile(code)
+
+        with open(path, "w") as file:
+            for line in compiled_lines:
+                file.write(line + "\n")
 
         return compiled_lines
 

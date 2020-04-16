@@ -15,7 +15,14 @@ class Code():
         self.written_instructions = []                       # Completed lines of code, represented as Instruction objects
 
 
-    def write(self):
+    def write_function(self):
+        """
+        Write a single function.
+        """
+        self.write('single-function')
+
+
+    def write(self, special=None):
         """
         Write instructions untill the program is deemed finished.
         """
@@ -38,6 +45,12 @@ class Code():
 
             # Complete the instruction and add it to written instructions
             self.write_instruction(selected_instruction)
+
+
+            # Handle specific stopping points.
+            if special == "single-function" and len(self.written_instructions) > 0:
+                if self.written_instructions[-1].template[0] == "return":
+                    break
 
             # DEBUG
             # print("Instruction Count:", len(self.written_instructions), "Num Funcs", self.scope.funcs['num_created'], "Current Indent:", self.scope.indent)

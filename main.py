@@ -24,17 +24,20 @@ available_instructions = th.create_instructions("templates/main.tmpl")
 # Write Code & Pre-compile
 ###
 code = Code(available_instructions)
-code.write()
+code.load_from_file("function-header.pytmpl")
+code.write_function()
 code.finalize()
 
-for instruction in code.written_instructions:
-	print(instruction.indent, str(instruction))
+# for instruction in code.written_instructions:
+# 	print(str(instruction))
+
+code.save_to_file("out.pytmpl")
 
 ###
 # Compile to Pyhton3
 ###
 compiler = Compiler()
-compiled_lines = compiler.compile(code)
+compiled_lines = compiler.compile_and_write(code, "out.py")
 
-for line in compiled_lines:
-    print(line)
+# for line in compiled_lines:
+#     print(line)

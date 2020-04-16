@@ -125,7 +125,7 @@ class Instruction():
             scope = self.parse_element(element, scope)
 
         # LASTLY!! Increase indent if this instruction is a statement.
-        if elements[0] in ["def", "for", "while", "if"]:
+        if self.is_statement():
             scope.indent += 1
 
         return scope  
