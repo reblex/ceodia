@@ -60,7 +60,7 @@ class TemplateHandler():
 		"""
 
 		# Make each element a list so we can figure out permutations.
-		# Ex: [if, var<int>, {{<|>}}, int] would become [[if], [var<int>], [<, >], [int]]
+		# Ex: [if, var<int>, {{<|>}}, <int>] would become [[if], [var<int>], [<, >], [<int>]]
 		instruction_parts = []
 		for element in template:
 			if not "{{" in element:

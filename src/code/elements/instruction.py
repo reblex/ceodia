@@ -32,7 +32,7 @@ class Instruction():
         Return all dynamic elements required.
         This only includes elements that already need to be in place
         in the code, such as variables and functions, and not
-        static values that just need to be filled in like "int" or "bool".
+        static values that just need to be filled in like "<int>" or "<bool>".
         """
         requirements = []
         for element in self.template:
@@ -62,7 +62,7 @@ class Instruction():
         dynamic_elements = []
         for i, element in enumerate(self.template):
             # Dynamic element Values
-            if element in ["int", "bool"]:
+            if element in ["<int>", "<bool>", "<float>", "<int[]>", "<float[]>"]:
                 dynamic_elements.append(element)
                 self.dynamic_element_indexes.append(i)
             
@@ -217,10 +217,19 @@ class Instruction():
         Recreate an instruction element into the original template element.
         """
         if self.is_int(element):
-            return "int"
+            return "<int>"
 
+        elif self.is_float(element):
+            return "<float>"
+        
         elif self.is_bool(element):
-            return "bool"
+            return "<bool>"
+        
+        elif self.is_int_list(element):
+            return "<int[]>"
+
+        elif self.is_int_list(element):
+            return "<float[]>"
         
         else:
             # Remove variable/function numberings if present
@@ -240,12 +249,50 @@ class Instruction():
             return False
 
 
+    def is_float(self, string):
+        """
+        Check if a string represents a float.
+        """
+        try:
+            float(string)
+            return True
+        except ValueError:
+            return False     
+
+
     def is_bool(self, string):
         """
         Check if a string represents a boolean.
         """
         if string in ["True", "False"]:
             return True
+
+        return False
+
+
+    def is_int_list(self, string):
+        """
+        Check if a string represents a list of integers.
+        
+        OBS: This just bases the list type on first element.
+        Therefore, it is important that lists types are STATIC.
+        """
+        if string.startswith("[") and string.endswith("]"):
+            if self.is_int(string.strip("[").strip("]").split(",")[0]):
+                return True
+
+        return False
+
+    def is_float_list(self, string):
+        """
+        Check if a string represents a list of integers.
+        
+        OBS: This just bases the list type on first element.
+        Therefore, it is important that lists types are STATIC.
+        """
+        if string.startswith("[") and string.endswith("]"):
+            if self.is_float(string.strip("[").strip("]").split(",")[0]):
+                return True
 
         return False
 

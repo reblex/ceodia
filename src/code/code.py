@@ -401,11 +401,20 @@ class Code():
 
         # Static value dynamic elements.
         # TODO: Needs to be some logic/intelligence to this to 
-        elif token == "int":
+        elif token == "<int>":
             return [str(random.randint(0, 5))]
         
-        elif token == "bool":
-            raise Exception("bool static value handling not implemented")
+        elif token == "<float>":
+            return [str(round(random.uniform(0, 5), 2))]
+        
+        elif token == "<bool>":
+            return [np.random.choice(["True", "False"])]
+
+        elif token == "<int[]>":
+            return ["[]"]
+
+        elif token == ["<float[]>"]:
+            return ["[]"]
 
         return elements
 

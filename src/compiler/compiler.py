@@ -98,7 +98,7 @@ class Compiler():
         Ex 1: nvar<int>1 => int1
         Ex 2: pvar<bool>3 => arg_bool3
         """
-        type = re.findall(r"<(.*?)>", element)[0]
+        type = re.findall(r"<(.*?)>", element)[0].replace("[]", "_list")
         number = re.findall(r">([\d]+)", element)[0]
 
         name = ""

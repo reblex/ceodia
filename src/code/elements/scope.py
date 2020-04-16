@@ -10,7 +10,19 @@ class Scope():
                 "num_created": 0,
                 "available": []
             },
+            "float": {
+                "num_created": 0,
+                "available": []
+            },
             "bool": {
+                "num_created": 0,
+                "available": []
+            },
+            "int[]": {
+                "num_created": 0,
+                "available": []
+            },
+            "float[]": {
                 "num_created": 0,
                 "available": []
             },
@@ -20,7 +32,19 @@ class Scope():
                 "num_created": 0,
                 "available": []
             },
+            "float": {
+                "num_created": 0,
+                "available": []
+            },
             "bool": {
+                "num_created": 0,
+                "available": []
+            },
+            "int[]": {
+                "num_created": 0,
+                "available": []
+            },
+            "float[]": {
                 "num_created": 0,
                 "available": []
             },

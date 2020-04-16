@@ -1,13 +1,20 @@
 ### Generic Variable Declaration ###
-nvar<int> = int
+nvar<int> = <int>
+nvar<int[]> = <int[]>
+nvar<float> = <float>
+nvar<bool> = <bool>
 
 ### Basic Math & Assignment ###
-var<int> = int
-{{var<int>}} {{+=|-=}} {{var<int>|int}}
-{{avar<int>}} {{+=|-=}} {{avar<int>|var<int>|int}}
+var<int> = <int>
+var<int[]> = <int[]>
+var<float> = <float>
+var<bool> = <bool>
+
+{{var<int>}} {{+=|-=}} {{var<int>|<int>}}
+{{avar<int>}} {{+=|-=}} {{avar<int>|var<int>|<int>}}
 
 #### Statements ###
-if var<int> {{<|>|<=|>=|==}} {{var<int>|int}}
+if var<int> {{<|>|<=|>=|==}} {{var<int>|<int>}}
 
 #### Function Def ###
 def nfunc<void>({{|pvar<int>|pvar<int>,pvar<int>}})
