@@ -71,7 +71,7 @@ class TemplateHandler():
 				# Multiple options of tokens.
 				# Find all permutations of the element.
 				# func(|var<int>) becomes [func(), func(var<int>)]
-				element_permutations = self.generate_permutations(element)
+				element_permutations = self.generate_element_permutations(element)
 				instruction_parts.append(element_permutations)
 
 		# Now find all permutations of the template
@@ -82,7 +82,7 @@ class TemplateHandler():
 		return permutations
 
 
-	def generate_permutations(self, element):
+	def generate_element_permutations(self, element):
 		"""
 		Generate all permutations of an instruction element.
 		"""
@@ -93,7 +93,7 @@ class TemplateHandler():
 			# Create Deep Permutations
 			for i, token in enumerate(tokens):
 				if "{{" in token:
-					token_permutations = self.generate_permutations(token)
+					token_permutations = self.generate_element_permutations(token)
 					del tokens[i]
 					tokens.extend(token_permutations)
 
@@ -103,24 +103,28 @@ class TemplateHandler():
 
 		permutations = []
 		for template_permutation in itertools.product(*permutation_parts):
-			permutation = element  
+			permutation = element
 			for i in range(len(template_permutation)):
-				
-				# Encapsulate dynamic element parts with {{}}
-				repl = template_permutation[i]
-				if repl.startswith("nfunc") or repl.startswith("func") or repl.startswith("nvar") or repl.startswith("pvar") or repl.startswith("var") or repl.startswith("<"):
-					if "," in repl:
-						repls = repl.split(",")
-						repl = ','.join(["{{" + elem + "}}" for elem in repls])
-					else:
-						repl = "{{" + repl + "}}"
 
-				# Debug
+				repl = template_permutation[i]
+				if not permutation.startswith("nfunc") or permutation.startswith("func"): 
+					if repl.startswith("nvar") or repl.startswith("pvar") or repl.startswith("var") or repl.startswith("<"):                     
+						if "," in repl:
+							repls = repl.split(",")
+							repl = ','.join(["{{" + elem + "}}" for elem in repls])
+						else:
+							repl = "{{" + repl + "}}"
+
+				#DEBUG
 				# print("replacing", "[[" + str(i) + "]]", "in", permutation, "with", repl)
+
 				permutation = permutation.replace("[[" + str(i) + "]]", repl)
 
-			permutations.append(permutation)
+			if permutation.startswith("nfunc") or permutation.startswith("func"):
+				permutation = "{{" + permutation + "}}"
 
+			permutations.append(permutation)
+		
 		return permutations
 
 
