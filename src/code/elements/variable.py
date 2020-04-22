@@ -14,7 +14,7 @@ class Variable():
         """
         token = ""
         if self.is_argument:
-            token += "avar"
+            token += "var"
         else:
             if not self.has_been_defined:
                 token += "nvar"

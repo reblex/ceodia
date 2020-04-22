@@ -36,7 +36,7 @@ class Instruction():
         """
         requirements = []
         for element in self.template:
-            if element.startswith("var") or element.startswith("avar") or element.startswith("func"):
+            if element.startswith("var") or element.startswith("func"):
                 requirements.append(element)
 
         return requirements
@@ -47,7 +47,7 @@ class Instruction():
         Is the function required to be inside of a function?
         """
         for element in self.template:
-            if element == "return" or element.startswith("avar"):
+            if element == "return":
                 return True
 
         return False
@@ -67,7 +67,7 @@ class Instruction():
                 self.dynamic_element_indexes.append(i)
             
             # Variables and functions
-            elif element.startswith("var") or element.startswith("avar") or element.startswith("func"):
+            elif element.startswith("var") or element.startswith("func"):
                 dynamic_elements.append(element)
                 self.dynamic_element_indexes.append(i)
 
@@ -160,13 +160,13 @@ class Instruction():
             # Create the argument variables representing the parameters, if present.
             param_arg_vars = []
             for type in param_types:
-                # TODO: Move handling of creation of avars/vars/funcs to Scope class?
-                var_num = scope.avars[type]['num_created']
-                scope.avars[type]['num_created'] += 1
+                # TODO: Move handling of creation of vars/funcs to Scope class?
+                var_num = scope.vars[type]['num_created']
+                scope.vars[type]['num_created'] += 1
                 
                 var = Variable(type, scope.indent + 1, var_num, True)
                 param_arg_vars.append(var)
-                scope.avars[type]['available'].append(var)
+                scope.vars[type]['available'].append(var)
 
             # Create the function object.
             func_num = scope.funcs['num_created']

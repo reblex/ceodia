@@ -318,11 +318,6 @@ class Code():
             if len(self.scope.vars[type]['available']) > 0:
                 is_present = True
 
-        elif requirement.startswith("avar"):
-            type = re.findall(r"<(.*?)>", requirement)[0]
-            if len(self.scope.avars[type]['available']) > 0:
-                is_present = True
-
         elif requirement.startswith("func"):
             return_type = re.findall(r"func<(.*?)>", requirement)[0]
             arg_types = re.findall(r"var<(.*?)>", requirement)
@@ -367,7 +362,7 @@ class Code():
         Ex 1: token=var<int>
         Returns a list of all scoped variables of type int.
         
-        Ex 2: token=func(avar<int>,avar<int>)
+        Ex 2: token=func(var<int>,var<int>)
         Returns a list of all scoped functions where there are two integer parameters.
         """
         elements = []
@@ -375,10 +370,6 @@ class Code():
         if token.startswith("var"):
             type = re.findall(r"<(.*?)>", token)[0]
             elements = self.scope.vars[type]['available']
-
-        elif token.startswith("avar"):
-            type = re.findall(r"<(.*?)>", token)[0]
-            elements = self.scope.avars[type]['available']
 
         elif token.startswith("func"):
             return_type = re.findall(r"func<(.*?)>", token)[0]

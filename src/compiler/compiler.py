@@ -61,7 +61,7 @@ class Compiler():
         Compile and instruction element.
         """
         e = element
-        if e.startswith("nvar") or e.startswith("pvar") or e.startswith("var") or e.startswith("avar"):
+        if e.startswith("nvar") or e.startswith("pvar") or e.startswith("var"):
             return self.compile_var_name(e)
         
         elif e.startswith("nfunc") or e.startswith("func"):
@@ -77,7 +77,7 @@ class Compiler():
         Ex 1: nfunc<int>0(pvar<int>0,pvar<bool>0) => func0_int(arg_int0, arg_bool0)
         Ex 2: func<void>3() => func0_void()
         """
-        params = re.findall(r"[pa]*var<.*?>\d+", element)
+        params = re.findall(r"[p]*var<.*?>\d+", element)
         return_type = re.findall(r"func<(.*?)>", element)[0]
         number = re.findall(r">([\d]+?)\(", element)[0]
 
@@ -101,11 +101,6 @@ class Compiler():
         type = re.findall(r"<(.*?)>", element)[0].replace("[]", "_list")
         number = re.findall(r">([\d]+)", element)[0]
 
-        name = ""
-
-        if element.startswith("p") or element.startswith("a"):
-            name += "arg_"
-
-        name += type + number
+        name = type + number
 
         return name

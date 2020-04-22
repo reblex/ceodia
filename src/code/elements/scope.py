@@ -26,29 +26,7 @@ class Scope():
                 "num_created": 0,
                 "available": []
             },
-        }
-        self.avars = {
-            "int": {
-                "num_created": 0,
-                "available": []
-            },
-            "float": {
-                "num_created": 0,
-                "available": []
-            },
-            "bool": {
-                "num_created": 0,
-                "available": []
-            },
-            "int[]": {
-                "num_created": 0,
-                "available": []
-            },
-            "float[]": {
-                "num_created": 0,
-                "available": []
-            },
-        }
+        },
         self.funcs = {
             "num_created": 0,
             "available": []
@@ -56,7 +34,7 @@ class Scope():
 
     def reduce_indentation(self):
         """
-        Reduce indentation level and remove vars/avars/funcs that go out of scope.
+        Reduce indentation level and remove vars/funcs that go out of scope.
         """
         if self.indent == 0:
             raise Exception("Code: Trying to reduce indentation below 0")
@@ -70,14 +48,6 @@ class Scope():
                     vars_still_in_scope.append(var)
 
             self.vars[type]['available'] = vars_still_in_scope
-
-        for type, obj in self.avars.items():
-            avars_still_in_scope = []
-            for var in obj['available']:
-                if var.indent <= self.indent:
-                    vars_still_in_scope.append(var)
-
-            self.avars[type]['available'] = avars_still_in_scope
 
         funcs_still_in_scope = []
         for func in self.funcs['available']:
@@ -96,5 +66,4 @@ class Scope():
         clone.nr_instructions_in_func = self.nr_instructions_in_func
         clone.indent = self.indent
         clone.vars = copy.deepcopy(self.vars)
-        clone.avars = copy.deepcopy(self.avars)
         clone.funcs = copy.deepcopy(self.funcs)

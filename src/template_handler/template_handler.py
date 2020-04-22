@@ -70,7 +70,7 @@ class TemplateHandler():
 			else:
 				# Multiple options of tokens.
 				# Find all permutations of the element.
-				# func(|avar<int>) becomes [func(), func(avar<int>)]
+				# func(|var<int>) becomes [func(), func(var<int>)]
 				element_permutations = self.generate_permutations(element)
 				instruction_parts.append(element_permutations)
 
@@ -105,11 +105,19 @@ class TemplateHandler():
 		for template_permutation in itertools.product(*permutation_parts):
 			permutation = element  
 			for i in range(len(template_permutation)):
-				replacement = template_permutation[i]
+				
+				# Encapsulate dynamic element parts with {{}}
+				repl = template_permutation[i]
+				if repl.startswith("nfunc") or repl.startswith("func") or repl.startswith("nvar") or repl.startswith("pvar") or repl.startswith("var") or repl.startswith("<"):
+					if "," in repl:
+						repls = repl.split(",")
+						repl = ','.join(["{{" + elem + "}}" for elem in repls])
+					else:
+						repl = "{{" + repl + "}}"
 
 				# Debug
-				# print("replacing", "[[" + str(i) + "]]", "in", permutation, "with", replacement)
-				permutation = permutation.replace("[[" + str(i) + "]]", replacement)
+				# print("replacing", "[[" + str(i) + "]]", "in", permutation, "with", repl)
+				permutation = permutation.replace("[[" + str(i) + "]]", repl)
 
 			permutations.append(permutation)
 
