@@ -71,20 +71,7 @@ class TemplateHandler():
 				# Multiple options of tokens.
 				# Find all permutations of the element.
 				# func(|avar<int>) becomes [func(), func(avar<int>)]
-				
-				dynamic_part = re.findall(r"{{(.*)}}", element)[0]
-				static_part = re.sub(r"{{.*}}", "???", element)
-
-				tokens = []
-				for token in dynamic_part.split("|"):
-					tokens.append(token)
-
-				# Put in each avaialable dynamic part of the element into the static part.
-				element_permutations = []
-				for token in tokens:
-					permutation = re.sub(r"\?\?\?", token, static_part)
-					element_permutations.append(permutation)
-
+				element_permutations = self.generate_permutations(element)
 				instruction_parts.append(element_permutations)
 
 		# Now find all permutations of the template
@@ -93,3 +80,75 @@ class TemplateHandler():
 			permutations.append(list(template_permutation))
 
 		return permutations
+
+
+	def generate_permutations(self, element):
+		"""
+		Generate all permutations of an instruction element.
+		"""
+		permutation_parts = []
+		for idx, dynamic in enumerate(re.findall(r"{{(.*)}}", element)):
+			tokens = self.extract_tokens(dynamic)
+
+			# Create Deep Permutations
+			for i, token in enumerate(tokens):
+				if "{{" in token:
+					token_permutations = self.generate_permutations(token)
+					del tokens[i]
+					tokens.extend(token_permutations)
+
+			element = element.replace("{{" + dynamic + "}}", "[[" + str(idx) + "]]", 1)
+
+			permutation_parts.append(tokens)
+
+		permutations = []
+		for template_permutation in itertools.product(*permutation_parts):
+			permutation = element  
+			for i in range(len(template_permutation)):
+				replacement = template_permutation[i]
+
+				# Debug
+				# print("replacing", "[[" + str(i) + "]]", "in", permutation, "with", replacement)
+				permutation = permutation.replace("[[" + str(i) + "]]", replacement)
+
+			permutations.append(permutation)
+
+		return permutations
+
+
+	def extract_tokens(self, dynamic_part):
+		"""
+		Get all variations of dynamic parts in an element.
+		"""
+		tokens = []
+		for token in self.optsplit(dynamic_part):
+			tokens.append(token)
+
+		return tokens
+
+
+	def optsplit(self, string):
+		"""
+		Split options in string separated by "|".
+		Do not split on "|" when inside of multivalue: {{}}
+		"""
+		parts = string.split("|")
+
+		filtered_parts = []
+		combo_parts = []
+		for part in parts:
+			if "{{" in part:
+				combo_parts.append(part)
+			
+			elif "}}" in part:
+				combo_parts.append(part)
+				filtered_parts.append("|".join(combo_parts))
+				combo_parts = []
+
+			elif len(combo_parts) == 0:
+				filtered_parts.append(part)
+
+			else:
+				combo_parts.append(part)
+
+		return filtered_parts
