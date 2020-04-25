@@ -14,7 +14,11 @@ class Variable():
         """
         token = ""
         if self.is_argument:
-            token += "var"
+            if not self.has_been_defined:
+                self.has_been_defined = True
+                token += "pvar"
+            else:
+                token += "var"
         else:
             if not self.has_been_defined:
                 token += "nvar"

@@ -11,7 +11,6 @@ class Instruction():
         self.template = []                   # List of elemnts in the instruction.
         self.elements = []                   # Uncompiled elements. Mix of static strings & element objects.
         self.indent = None                   # Indentation of the line (amount of tabs)
-        self.dynamic_element_indexes = []    # Indexes of the template's dynamic elements.
         self.pre_compiled_elements = []      # All elements after pre-compilation.
 
         if template != None:
@@ -34,12 +33,7 @@ class Instruction():
         in the code, such as variables and functions, and not
         static values that just need to be filled in like "<int>" or "<bool>".
         """
-        requirements = []
-        for element in self.template:
-            if element.startswith("var") or element.startswith("func"):
-                requirements.append(element)
-
-        return requirements
+        return self.get_dynamic_element_tokens(True)
 
 
     def must_be_in_function(self):
@@ -53,23 +47,23 @@ class Instruction():
         return False
 
 
-    def get_dynamic_element_tokens(self):
+    def get_dynamic_element_tokens(self, only_required=False):
         """
         Return ALL element tokens that are required to be filled out in order to complete the instruction.
         This function also internally marks where those elements appear, which is used when
         completing the instruction.
         """
         dynamic_elements = []
-        for i, element in enumerate(self.template):
-            # Dynamic element Values
-            if element in ["<int>", "<bool>", "<float>", "<int[]>", "<float[]>"]:
-                dynamic_elements.append(element)
-                self.dynamic_element_indexes.append(i)
-            
-            # Variables and functions
-            elif element.startswith("var") or element.startswith("func"):
-                dynamic_elements.append(element)
-                self.dynamic_element_indexes.append(i)
+        for element in self.template:
+            for sub_element in [elem[2:-2] for elem in re.findall("{{.*?}}", element)]:
+                # Dynamic element Values
+                if not only_required:
+                    if sub_element in ["<int>", "<bool>", "<float>", "<int[]>", "<float[]>"]:
+                        dynamic_elements.append(sub_element)
+                
+                # Variables and functions
+                if sub_element.startswith("var") or sub_element.startswith("func"):
+                    dynamic_elements.append(sub_element)
 
         return dynamic_elements
 
@@ -81,17 +75,33 @@ class Instruction():
         Returns the updated scope.
         """
 
+        # TODO: Something similar to this but without using element indexes? (count nr of {{}}?)
         # Make sure that all dynamic elements are being filled.
-        if len(args) != len(self.dynamic_element_indexes):
-            raise Exception("Incorrect number of dynamic elements when completing instruction.")
+        # if len(args) != len(self.dynamic_element_indexes):
+        #     raise Exception("Incorrect number of dynamic elements when completing instruction.")
 
         # Make note if a function has called return.
         if self.elements[0] == "return":
             scope.in_function.has_returned = True
 
         # Replace dynamic elements with elements given by code_writer.
-        for i, index in enumerate(self.dynamic_element_indexes):
-            self.elements[index] = str(args[i])
+        replacements_made = 0
+        for idx, element in enumerate(self.elements):
+            for dynamic_part in [elem for elem in re.findall("{{.*?}}", element)]:
+                replacement = ""
+                
+                if dynamic_part.startswith("{{func"):
+                    # A self-created function call replacement is based on a list containing
+                    # the function object along with any arguments.
+                    replacement = "{{" + args[replacements_made][0].call(args[replacements_made][1:]) + "}}"
+
+                else:
+                    replacement = "{{"+str(args[replacements_made])+"}}"
+
+                self.elements[idx] = self.elements[idx].replace(dynamic_part, replacement, 1)
+                replacements_made += 1
+                print("Replacing", dynamic_part, "with", replacement, "in element", element)
+                print("Elements are now:", self.elements)
 
         # Create variable/func objects, update scope etc.
         # And finally, pre-compile elements into tokens.
@@ -136,7 +146,7 @@ class Instruction():
         Create variable/func objects, update scope etc.
         And finally, pre-compile elements into tokens.
         """
-        
+
         # The instruction is just reducing indentation.
         if element == "nlb":
             scope.reduce_indentation()
@@ -159,14 +169,15 @@ class Instruction():
 
             # Create the argument variables representing the parameters, if present.
             param_arg_vars = []
-            for type in param_types:
+            for param_type in param_types:
                 # TODO: Move handling of creation of vars/funcs to Scope class?
-                var_num = scope.vars[type]['num_created']
-                scope.vars[type]['num_created'] += 1
+                var_num = scope.vars[param_type]['num_created']
+                scope.vars[param_type]['num_created'] += 1
                 
-                var = Variable(type, scope.indent + 1, var_num, True)
+                var = Variable(param_type, scope.indent + 1, var_num, True)
+                var.has_been_defined = True
                 param_arg_vars.append(var)
-                scope.vars[type]['available'].append(var)
+                scope.vars[param_type]['available'].append(var)
 
             # Create the function object.
             func_num = scope.funcs['num_created']
@@ -181,14 +192,20 @@ class Instruction():
 
             self.pre_compiled_elements.append(str(func))
 
-        # Creation of a "regular" variable.
-        elif element.startswith("nvar"):
-            type = re.findall(r"<(.*?)>", element)[0]
-            var_num = scope.vars[type]['num_created']
-            scope.vars[type]['num_created'] += 1
+        # Creation of a variable.
+        elif element.startswith("nvar") or element.startswith("pvar"):
+            var_type = re.findall(r"<(.*?)>", element)[0]
+            var_num = scope.vars[var_type]['num_created']
+            scope.vars[var_type]['num_created'] += 1
             
-            var = Variable(type, scope.indent + 1, var_num)
-            scope.vars[type]['available'].append(var)
+            indent = scope.indent
+            is_argument = False
+            if element.startswith("pvar"):
+                is_argument = True
+                indent += 1
+
+            var = Variable(var_type, indent, var_num, is_argument)
+            scope.vars[var_type]['available'].append(var)
 
             self.pre_compiled_elements.append(str(var))
 
@@ -303,7 +320,6 @@ class Instruction():
         """
         clone = Instruction(" ".join(self.template))
         clone.indent = self.indent
-        clone.dynamic_element_indexes = self.dynamic_element_indexes.copy()
         clone.pre_compiled_elements = self.pre_compiled_elements.copy()
 
         return clone

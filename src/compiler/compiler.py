@@ -15,11 +15,23 @@ class Compiler():
         """
         compiled_lines = ["#!/usr/bin/env python3"]
 
-        for instruction in code.written_instructions:
+        for i, instruction in enumerate(code.written_instructions):
             
+            # Don't print multiple newlines for NLB.
+            if i > 1:
+                if instruction.template[0] == "nlb":
+                    if code.written_instructions[i-1].template[0] == "nlb":
+                        continue
+                    else:
+                        compiled_lines.append("")
+                        continue
+
             # Vertical spacing.
             if instruction.is_statement() or instruction.template[0] == "return":
-                compiled_lines.append("")
+                if i > 1:
+                    prev_instr = code.written_instructions[i-1]
+                    if not prev_instr.is_statement() and prev_instr.template[0] != "nlb":
+                        compiled_lines.append("")
             
             compiled_elements = []
             compiled_line = ""
@@ -30,8 +42,7 @@ class Compiler():
 
             # Compile each element of the instruction
             for element in instruction.pre_compiled_elements:
-                if element != "nlb":
-                    compiled_elements.append(self.compile_element(element))
+                compiled_elements.append(self.compile_element(element))
 
             # Make the line a string
             compiled_line += " ".join(compiled_elements)
@@ -60,15 +71,32 @@ class Compiler():
         """
         Compile and instruction element.
         """
-        e = element
-        if e.startswith("nvar") or e.startswith("pvar") or e.startswith("var"):
-            return self.compile_var_name(e)
-        
-        elif e.startswith("nfunc") or e.startswith("func"):
-            return self.compile_func(e)
+        if "{{" not in element:
+            if element.startswith("nvar") or element.startswith("pvar") or element.startswith("var"):
+                return self.compile_var_name(element)
 
-        else:
-            return e
+            # TODO: I think this is redundant, as functions should be wrapped in {{}}.
+            elif element.startswith("nfunc") or element.startswith("func"):
+                return self.compile_func(element)
+
+            else:
+                return element
+
+        # Element contains multiple dynamic parts {{...}}.
+        for dynamic_part in [elem for elem in re.findall("{{(.*?)}}", element)]:
+            compiled_part = ""
+            if dynamic_part.startswith("nvar") or dynamic_part.startswith("pvar") or dynamic_part.startswith("var"):
+                compiled_part = self.compile_var_name(dynamic_part)
+
+            elif dynamic_part.startswith("nfunc") or dynamic_part.startswith("func"):
+                compiled_part = self.compile_func(dynamic_part)
+            
+            else:
+                compiled_part = dynamic_part
+
+            element = element.replace("{{"+dynamic_part+"}}", compiled_part, 1)
+
+        return element
 
 
     def compile_func(self, element):
@@ -79,6 +107,7 @@ class Compiler():
         """
         params = re.findall(r"[p]*var<.*?>\d+", element)
         return_type = re.findall(r"func<(.*?)>", element)[0]
+        return_type = return_type.replace("[]", "_list")
         number = re.findall(r">([\d]+?)\(", element)[0]
 
         compiled_params = []
@@ -98,9 +127,9 @@ class Compiler():
         Ex 1: nvar<int>1 => int1
         Ex 2: pvar<bool>3 => arg_bool3
         """
-        type = re.findall(r"<(.*?)>", element)[0].replace("[]", "_list")
+        var_type = re.findall(r"<(.*?)>", element)[0].replace("[]", "_list")
         number = re.findall(r">([\d]+)", element)[0]
 
-        name = type + number
+        name = var_type + number
 
         return name

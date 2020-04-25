@@ -9,12 +9,20 @@ class Function():
         self.has_been_defined = False
         self.has_returned = False
 
-    def __str__(self):
+
+    def call(self, args=[]):
+        """
+        __str__ wrapper for when calling the function.
+        """
+        return self.__str__(args)
+
+
+    def __str__(self, args=[]):
         """
         Return the tokenized version of the function.
+        args is a list of arguments for when calling a function.
         """
         # TODO: Clean this up, reduce copied code.
-
         param_str = ""
         if not self.has_been_defined:
             arg_str = ""
@@ -28,13 +36,7 @@ class Function():
             self.has_been_defined = True
 
         else:
-            arg_str = ""
-            for i, param in enumerate(self.param_arg_vars):
-                if i > 0:
-                    arg_str += ","
-                
-                arg_str += "var<" + str(param.type) + ">" + str(param.number)
-            
+            arg_str = ",".join([str(var) for var in args])
             param_str = "func<" + self.return_type + ">" + str(self.number) + "(" + arg_str + ")"   
 
         return param_str

@@ -64,8 +64,11 @@ class TemplateHandler():
 		instruction_parts = []
 		for element in template:
 			if not "{{" in element:
-				# Just one option of token
-				instruction_parts.append([element])
+				if element.startswith("var") or element.startswith("<"):
+					instruction_parts.append(["{{" + element + "}}"])
+				else:
+					# Static element (like "return", "=", "def")
+					instruction_parts.append([element])
 
 			else:
 				# Multiple options of tokens.
@@ -107,8 +110,8 @@ class TemplateHandler():
 			for i in range(len(template_permutation)):
 
 				repl = template_permutation[i]
-				if not permutation.startswith("nfunc") or permutation.startswith("func"): 
-					if repl.startswith("nvar") or repl.startswith("pvar") or repl.startswith("var") or repl.startswith("<"):                     
+				if not permutation.startswith("nfunc") and not permutation.startswith("func"):  
+					if repl.startswith("var") or bool(re.match(r"<.*?>", repl)):                     
 						if "," in repl:
 							repls = repl.split(",")
 							repl = ','.join(["{{" + elem + "}}" for elem in repls])
@@ -120,7 +123,7 @@ class TemplateHandler():
 
 				permutation = permutation.replace("[[" + str(i) + "]]", repl)
 
-			if permutation.startswith("nfunc") or permutation.startswith("func"):
+			if permutation.startswith("func"):
 				permutation = "{{" + permutation + "}}"
 
 			permutations.append(permutation)

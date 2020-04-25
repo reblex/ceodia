@@ -1,4 +1,4 @@
-### Generic Variable Declaration ###
+### Variable Declaration ###
 nvar<int> = <int>
 nvar<int[]> = <int[]>
 #nvar<float> = <float>
@@ -7,32 +7,31 @@ nvar<int[]> = <int[]>
 ### Basic Math & Assignment ###
 var<int> = <int>
 var<int[]> = <int[]>
-var<float> = <float>
-var<bool> = <bool>
+#var<float> = <float>
+#var<bool> = <bool>
 
 var<int> {{+=|-=}} {{var<int>|<int>}}
-avar<int> {{+=|-=}} {{avar<int>|var<int>|<int>}}
 
 #### Statements ###
 if var<int> {{<|>|<=|>=|==}} {{var<int>|<int>}}
 
 
 ### Loops ###
-#for {{_|pvar<int>}} in range({{<int>|var<int>|avar<int>|len(var<int[]>)|len(var<float[]>)}})
+for {{_|pvar<int>}} in range({{<int>|var<int>|<int>,<int>|var<int>,var<int>|len({{var<int[]>|var<float[]>}})}})
 
 
 ### Built-in Function Calls ###
-var<int[]>.append({{<int>|var<int>|avar<int>}})
+{{var<int[]>}}.append({{<int>|var<int>}})
+#{var<float[]>}}.append({{<float>|var<float>}})
 
 
 #### Function Def ###
 #def nfunc<void>({{|pvar<int>|pvar<int>,pvar<int>}})
-#def nfunc<int>({{|pvar<int>|pvar<int>,pvar<int>}})
+def nfunc<int>({{|pvar<int>|pvar<int>,pvar<int>}})
 
 ### Returns ###
 return {{var<int>}}
 
 ### Function Call ###
 #func<void>({{|var<int>|var<int>,var<int>}})
-#var<int> = func<int>({{|var<int>|var<int>,var<int>}})
-#avar<int> = func<int>({{|var<int>|var<int>,var<int>}})
+var<int> = func<int>({{|var<int>|var<int>,var<int>}})

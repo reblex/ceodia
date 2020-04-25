@@ -1,5 +1,6 @@
 from src.code.elements.instruction import Instruction
 from src.code.elements.scope import Scope
+from src.code.elements.function import Function
 
 import numpy as np
 import random
@@ -43,9 +44,12 @@ class Code():
             if selected_instruction == None:
                 break
 
+            print("Selecting Instruction(" + str(len(self.written_instructions)+1) + "):", selected_instruction.template)
+
             # Complete the instruction and add it to written instructions
             self.write_instruction(selected_instruction)
-
+            print("Pre-compiled Instruction:", selected_instruction.pre_compiled_elements)
+            print("\n")
 
             # Handle specific stopping points.
             if special == "single-function" and len(self.written_instructions) > 0:
@@ -158,8 +162,8 @@ class Code():
                     continue
 
             # Check 4:
-            # Don't write functions inside of other functions.
-            if instruction.template[0] == "def" and self.scope.in_function != None:
+            # Don't write functions on indent above 0.
+            if instruction.template[0] == "def" and self.scope.indent != 0:
                 continue
 
 
@@ -242,12 +246,12 @@ class Code():
 
         # Select species based on probability
         selected_instruction = np.random.choice(writable_instructions, 1, p=probabilities)[0]
-        
-        # Return a clone, as we don't want to edit the original instruction object.
-        if selected_instruction != None:
-            selected_instruction = selected_instruction
 
-        
+        # TODO: Already cloning all writable.. for some reason. Don't remember why.
+        # # Return a clone, as we don't want to edit the original instruction object.
+        # if selected_instruction != None:
+        #     selected_instruction = selected_instruction.clone()
+
         return selected_instruction
 
 
@@ -258,26 +262,40 @@ class Code():
         Then update the current scope with variable/scope changes.
         """ 
         dynamic_element_tokens = instruction.get_dynamic_element_tokens()
-        element_objects = []
+        element_args = []
+        print("Dynamic Elements:", dynamic_element_tokens)
 
-        # DEBUG
-        # print("finalizing", instruction.template)
 
         # Find suitable elements to replace the dynamic element tokens of the instruction.
         for token in dynamic_element_tokens:
 
             # Find all fitting elements based on the token.
             elements = self.get_dynamic_elements_of_type(token)
-
             # Select one.
             # TODO: Use some intelligence (weighted list of elements?) Similar to select_instruction()
             selected_element = np.random.choice(elements)
-            element_objects.append(selected_element)
+            
+            # A call to a self-created function also requires the needed
+            # arguments for that function.
+            if isinstance(selected_element, Function):
+                arguments = []
+                for arg_type in selected_element.param_types:
+                    dynamic_type = "var<" + arg_type + ">"
+                    vars = self.get_dynamic_elements_of_type(dynamic_type)
 
-        self.scope = instruction.precompile(element_objects, self.scope)
+                    # TODO: Intelligence over selection here aswell maybeeeee.
+                    argument = np.random.choice(vars)
+                    arguments.append(argument)
+                
+                selected_element = [selected_element]
+                selected_element.extend(arguments)
 
-        # DEBUG
-        # print(">", instruction.pre_compiled_elements)
+            element_args.append(selected_element)
+
+        print("Element Replacements:", element_args)
+
+        self.scope = instruction.precompile(element_args, self.scope)
+
 
         return instruction
 
@@ -314,13 +332,18 @@ class Code():
         is_present = False
         
         if requirement.startswith("var"):
-            type = re.findall(r"<(.*?)>", requirement)[0]
-            if len(self.scope.vars[type]['available']) > 0:
+            var_type = re.findall(r"<(.*?)>", requirement)[0]
+            if len(self.scope.vars[var_type]['available']) > 0:
                 is_present = True
 
         elif requirement.startswith("func"):
             return_type = re.findall(r"func<(.*?)>", requirement)[0]
             arg_types = re.findall(r"var<(.*?)>", requirement)
+
+            # Make sure the arguments are available
+            for arg_type in arg_types:
+                if len(self.scope.vars[arg_type]['available']) == 0:
+                    break
 
             for func in self.scope.funcs['available']:
                 if not len(arg_types) == len(func.param_types):
@@ -368,11 +391,14 @@ class Code():
         elements = []
         
         if token.startswith("var"):
-            type = re.findall(r"<(.*?)>", token)[0]
-            elements = self.scope.vars[type]['available']
+            var_type = re.findall(r"<(.*?)>", token)[0]
+            elements = self.scope.vars[var_type]['available']
 
         elif token.startswith("func"):
             return_type = re.findall(r"func<(.*?)>", token)[0]
+            
+            # TODO: This way only variables can be passed to func.
+            # Could use re.findall(r"v\((.*)\)", token).split(",") to get all arguements of any type.
             arg_types = re.findall(r"var<(.*?)>", token)
 
             for func in self.scope.funcs['available']:

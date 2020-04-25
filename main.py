@@ -24,8 +24,11 @@ available_instructions = th.create_instructions("templates/main.tmpl")
 # Write Code & Pre-compile
 ###
 code = Code(available_instructions)
-code.load_from_file("function-header.pytmpl")
-code.write_function()
+# code.load_from_file("function-header.pytmpl")
+
+# code.write_function()
+code.write()
+
 code.finalize()
 
 # for instruction in code.written_instructions:
